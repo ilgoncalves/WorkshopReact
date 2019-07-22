@@ -1,91 +1,56 @@
 import React, { Component } from 'react';
 import Container from '@material-ui/core/Container';
-import { compose } from 'recompose'
 import { withStyles } from '@material-ui/core/styles'
-import Button from '@material-ui/core/Button';
-import { connect } from 'react-redux'
+import TextField from '@material-ui/core/TextField';
+import { callApi, api_key } from '../../services/api'
+import SearchBar from '../../components/SearchBar'
 import GridList from '@material-ui/core/GridList';
 import GridListTile from '@material-ui/core/GridListTile';
 
-import TextField from '@material-ui/core/TextField';
 
-import { callApi, api_key } from '../../services/api'
 
 const styles = {
   container: {
     display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    overflow: 'hidden',
-    padding: 0
+    padding: 0,
+    margin: 0,
+    flexDirection: 'column',
   },
-  gridList: {
-    width: 500,
-    height: 450,
-  },
-  textField: {
-    display: 'flex',
-    flex: 1
-  },
-  button: {
-    height: 56,
-    marginLeft: 12,
-    marginTop: 4
-
-  },
-  searchBar: {
-
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    display: 'flex',
-    flex: 1,
-    flexDirection: 'row',
-    marginLeft: 20,
-    marginRight: 20
-  },
-  gridContainer: {
-    paddingLeft: 20,
-    paddingRight: 20
+  gridlist: {
+    paddingLeft: 40,
+    paddingRight: 40
   }
 };
 
 class Home extends Component {
   constructor(props) {
-    super(props);
-    this.state = ({
+    super(props)
+    this.state = {
       photos: [],
-      toSearch: ''
-    })
-  }
-  componentWillMount() {
-    this._getPhotos()
+      textToSearch: ''
+    }
   }
 
-  _getPhotos = async () => {
-    // for (let i = 0; i < 4; i++) {
-    const { photos } = this.state
+  componentWillMount() {
+    this.getPhotos()
+  }
+  getPhotos = async () => {
 
     let response = await callApi({
-      endpoint: '/photos',
+      endpoint: '/get',
       method: 'GET',
       params: {
 
-        client_id: api_key,
-        per_page: 20
       }
-
     })
-    console.log(response)
-
+    console.log('RESPOSTA API ', response)
     this.setState({
-      photos: [...photos, ...response.data]
+      photos: [...this.state.photos, ...response.data]
     })
-
-    // }
-
-
+    console.log('PHOTOS', this.state.photos)
   }
-  _searchPhotos = async (query) => {
+
+  searchPhotos = async (query) => {
     let response = await callApi({
       endpoint: '/search/photos',
       method: 'GET',
@@ -95,66 +60,51 @@ class Home extends Component {
         per_page: 100
       }
     })
-    const { photos } = this.state
+    console.log('RESPOSTA API BUSCAR FOTOS', response.data.results)
     this.setState({
-      photos: [...photos, ...response.data.results]
+      photos: [...this.state.photos, ...response.data.results]
     })
-    console.log(response)
+    console.log('PHOTOS', this.state.photos)
   }
   render() {
-    const { classes } = this.props
 
-    //Essa funcao comentada é a funcao responsavel para fazer a navagecao para outrarota
-    // this.props.history.push('./outrarota')
+    const { classes } = this.props
     return (
       <Container
         className={classes.container}
       >
-        <div
-          className={classes.searchBar}
-        >
-          <TextField
-            id="outlined-with-placeholder"
-            label="Pesquisar"
-            placeholder="Pesquise um tema para fotos que deseja ver."
-            className={classes.textField}
-            margin="normal"
-            variant='outlined'
-            onChange={(event) => {
-              console.log(event.target.value)
-              this.setState({ toSearch: event.target.value })
-            }}
-          />
-          <Button
-            onClick={() => {
-              this.setState({ photos: [] })
-              this._searchPhotos(this.state.toSearch)
-            }}
-            variant="contained"
-            color="primary"
-            className={classes.button}
-          >
-            Pesquisar
-          </Button>
-        </div>
+        <SearchBar
+          onPress={() => {
+            this.setState({ photos: [] })
+            this.searchPhotos(this.state.textToSearch)
+          }}
+          onChangeText={(text) => this.setState({ textToSearch: text })}
+          buttonTitle='Pesquisar'
+        />
 
-        <GridList className={classes.gridContainer} cellHeight={400} cols={2}>
-          {this.state.photos.map((item, i) => (
-            <GridListTile key={`photo-${i}`} cols={(item.width > item.height) ? 2 : 1} rows={(item.width > item.height) ? 1 : 2}>
-              <img src={item.urls.regular} alt={item.alt_description} />
-            </GridListTile>
-          ))}
+        <GridList className={classes.gridlist} cellHeight={160} cols={2}>
+          {
+            this.state.photos.map((value, i) => (
+              <GridListTile
+                key={i}
+                cols={(value.width > value.height) ? 2 : 1}
+                rows={(value.height > value.width) ? 2 : 1}
+              >
+                <img src={value.urls.regular} />
+              </GridListTile>
+            ))
+          }
+
+
         </GridList>
+
+
       </Container>
     );
   }
 }
 
-const mapStateToProps = state => ({
-  teste: state.reducer.teste
-});
+//Essa funcao comentada é a funcao responsavel para fazer a navagecao para outrarota
+// this.props.history.push('./outrarota')
 
-export default compose(
-  connect(mapStateToProps),
-  withStyles(styles)
-)(Home)
+export default withStyles(styles)(Home)
